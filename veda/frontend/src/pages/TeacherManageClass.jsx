@@ -1,0 +1,186 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useAuthStore } from "../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
+import { FileQuestionMark } from "lucide-react";
+
+export default function TeacherManageClass() {
+  const navigate = useNavigate();
+  const authUser = useAuthStore((state) => state.authUser);
+  const token = useAuthStore((state) => state.token);
+  const { t } = useTranslation();
+  const [title, setTitle] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [classes, setClasses] = useState([]);
+  const [activeClass, setActiveClass] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingClasses, setLoadingClasses] = useState(true); // ✅ skeleton toggle
+
+  const API_BASE = "http://localhost:3000/api/live-class";
+
+  // ✅ Fetch teacher’s classes
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setClasses(Array.isArray(res.data.classes) ? res.data.classes : []);
+      } catch (err) {
+        console.error(
+          "Error fetching classes:",
+          err.response?.data || err.message
+        );
+        setClasses([]);
+      } finally {
+        setLoadingClasses(false); // ✅ stop skeleton
+      }
+    };
+
+    if (authUser?._id) fetchClasses();
+  }, [authUser, token]);
+
+  // ✅ Schedule new class
+  const handleSchedule = async () => {
+    if (!title || !startTime) {
+      toast((t) => (
+
+        <span className="flex justify-center items-center">
+          <FileQuestionMark className="size-10 text-red-600" />
+          <div>Please provide both title and start time</div>
+          <button className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" onClick={() => toast.dismiss(t.id)}>Dismiss</button>
+        </span>
+      ));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        API_BASE,
+        { title, startTime, description: "" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setClasses([...classes, res.data.class]); // add new class to list
+      toast.success("Class scheduled successfully!");
+      setTitle("");
+      setStartTime("");
+    } catch (err) {
+      console.error(
+        "Error scheduling class:",
+        err.response?.data || err.message
+      );
+      toast.error(
+        "Error scheduling class: " + (err.response?.data?.error || err.message)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Skeleton UI for class list
+  const SkeletonList = () => (
+    <ul className="space-y-3 animate-pulse">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <li
+          key={i}
+          className="flex justify-between items-center p-3 border rounded-lg"
+        >
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-gray-300 rounded"></div>
+            <div className="h-3 w-24 bg-gray-200 rounded"></div>
+          </div>
+          <div className="h-8 w-20 bg-gray-300 rounded"></div>
+        </li>
+      ))}
+    </ul>
+  );
+
+  return (
+    <div className="max-w-3xl mx-auto p-6">
+      <button
+        className="bg-blue-600 p-1.5 rounded-sm cursor-pointer text-white mb-4"
+        onClick={() => {
+          navigate("/teacher");
+        }}
+      >
+        Back
+      </button>
+
+      <h1 className="text-3xl font-bold mb-6">{t("manageLiveClasses")}</h1>
+
+      {/* Schedule New Class */}
+      <div className="bg-white border rounded-xl shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">{t("scheduleNewClass")}</h2>
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder={t("classTitle")}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg"
+          />
+          <input
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg"
+          />
+          <button
+            onClick={handleSchedule}
+            disabled={loading}
+            className={`w-full py-2 rounded-lg text-white ${
+              loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            {loading ? t("scheduling") : t("scheduleClass")}
+          </button>
+        </div>
+      </div>
+
+      {/* Scheduled Classes List */}
+      <div className="bg-white border rounded-xl shadow p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">
+          {t("yourScheduledClasses")}
+        </h2>
+        {loadingClasses ? (
+          <SkeletonList /> // ✅ show skeleton
+        ) : classes.length === 0 ? (
+          <p className="text-gray-500">{t("noClassesScheduled")}</p>
+        ) : (
+          <ul className="space-y-3">
+            {classes.map((cls) => (
+              <li
+                key={cls._id}
+                className="flex justify-between items-center p-3 border rounded-lg"
+              >
+                <div>
+                  <p className="font-medium">{cls.title}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(cls.startTime).toLocaleString()}
+                  </p>
+                </div>
+                {cls.status === "liv" ? (
+                  <span className="text-red-600 font-semibold">
+                    {t("live")}
+                  </span>
+                ) : (
+                  <button
+                    onClick={() =>
+                      navigate(`/teacher/class/${cls._id}/broadcast`)
+                    }
+                    className="px-4 py-2 bg-green-600 text-white rounded"
+                  >
+                    {t("startLive")}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
