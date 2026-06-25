@@ -8,8 +8,6 @@
   <br />
 
   <!-- Screenshots Placeholder -->
-  <img src="https://via.placeholder.com/800x400.png?text=VEDA+Platform+Screenshot" alt="VEDA Screenshot" />
-</div>
 
 <br />
 
