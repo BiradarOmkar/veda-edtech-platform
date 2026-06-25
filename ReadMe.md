@@ -3,6 +3,10 @@
 # 📚 VEDA
 
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&pause=1000&color=4F46E5&center=true&vCenter=true&width=900&lines=Next-Generation+EdTech+Platform;Live+Streaming+%26+Real-Time+Sync;Progressive+Web+App+Architecture;Inclusive+Education+Technology" />
+ <a href="https://veda-gamma.vercel.app/login"><strong>🚀 View Live Demo</strong></a> 
+  <br />
+
+
 
 **Bridging the gap between teachers and students through modern, scalable web technologies**
 
